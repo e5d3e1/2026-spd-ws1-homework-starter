@@ -4,7 +4,8 @@
 
 Hook: `.claude/hooks/protect-migrations.mjs`, wired in `.claude/settings.json` as `PreToolUse` on `Edit|Write|MultiEdit`.
 It blocks (exit 2) any change to an applied `db/migrations/*.sql` (committed in `HEAD`); a new migration can be created
-and fixed until it is committed. Paths are canonicalized with `realpath`, so a symlink alias does not bypass it.
+and fixed until it is committed. The target's real directory is compared with the real `db/migrations` (both via `realpath`),
+so a symlink to a file or to the migrations directory does not bypass it.
 If git cannot answer, the hook blocks (fail closed).
 
 ## 1. Live Claude Code session (hook active)
@@ -56,6 +57,8 @@ All cases, run on a temporary clone with a symlink `mlink -> db/migrations` and 
 | `Write` `db/migrations/004_brand_new.sql` (new file) | 0 |
 | `Edit` `lib/tasks.ts` (not a migration) | 0 |
 | `Edit` an existing migration outside a git repo (fail closed) | 2 |
+| `db/migrations` itself is a symlink (to `../sql` inside the repo, or to a dir outside it): `Edit` `001` | 2 |
+| Same, symlink committed: `Edit` `db/migrations/001` or `sql/001` → 2; uncommitted `009_new.sql` → 0 | 2 / 0 |
 
 ## Known gap
 

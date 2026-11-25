@@ -49,10 +49,20 @@ function isCommitted(rel) {
 }
 
 const root = canonical(process.env.CLAUDE_PROJECT_DIR || process.cwd());
+const migDir = canonical(path.join(root, "db/migrations"));
 const abs = canonical(path.resolve(root, filePath));
-const rel = path.relative(root, abs).split(path.sep).join("/");
+const name = path.basename(abs);
+const rel = `db/migrations/${name}`; // repo path used for git and messages
+// Real location relative to root; differs from rel when db/migrations is a symlink inside the repo.
+const realRel = path.relative(root, abs).split(path.sep).join("/");
+const realInRepo = !realRel.startsWith("../") && !path.isAbsolute(realRel);
 
-if (/^db\/migrations\/[^/]+\.sql$/.test(rel) && fs.existsSync(abs) && isCommitted(rel)) {
+if (
+  path.dirname(abs) === migDir &&
+  name.endsWith(".sql") &&
+  fs.existsSync(abs) &&
+  (isCommitted(rel) || (realInRepo && isCommitted(realRel)))
+) {
   const message =
     `BLOCKED: ${rel} is an applied migration and must not be edited. ` +
     `Add a new migration instead, e.g. db/migrations/NNN_<name>.sql (see AGENTS.md hard rules).`;
