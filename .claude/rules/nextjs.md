@@ -2,6 +2,9 @@
 paths:
   - "app/**"
   - "next.config.ts"
+  - "proxy.ts"
+  - "instrumentation.ts"
+  - "instrumentation-client.ts"
   - "**/*.tsx"
 ---
 <!-- owner: @e5d3e1 · why: Next.js 16 has breaking changes vs. model training data; `next dev` used to inject this guidance into AGENTS.md, which we turned off (agentRules: false) to keep AGENTS.md short · review-by: 2027-02-24 -->
