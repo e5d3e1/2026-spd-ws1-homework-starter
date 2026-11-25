@@ -3,7 +3,9 @@
 <!-- owner: @e5d3e1 · why: proof that the blocking hook fires on a real violation (HW 1.1 deliverable 6) · review-by: 2027-02-24 -->
 
 Hook: `.claude/hooks/protect-migrations.mjs`, wired in `.claude/settings.json` as `PreToolUse` on `Edit|Write|MultiEdit`.
-It blocks (exit 2) any change to an existing `db/migrations/*.sql`; new migration files are allowed.
+It blocks (exit 2) any change to an applied `db/migrations/*.sql` (committed in `HEAD`); a new migration can be created
+and fixed until it is committed. Paths are canonicalized with `realpath`, so a symlink alias does not bypass it.
+If git cannot answer, the hook blocks (fail closed).
 
 ## 1. Live Claude Code session (hook active)
 
@@ -44,12 +46,16 @@ BLOCKED: db/migrations/001_create_tasks.sql is an applied migration and must not
 exit=2
 ```
 
-Allowed cases (exit 0, no output):
+All cases, run on a temporary clone with a symlink `mlink -> db/migrations` and an uncommitted `003_new.sql`:
 
 | Payload | Exit |
 |---|---|
-| `Write` `db/migrations/003_new.sql` (new file) | 0 |
+| `Edit` `db/migrations/001_create_tasks.sql` (relative and absolute path) | 2 |
+| `Edit` `mlink/001_create_tasks.sql` (symlink alias, relative and absolute) | 2 |
+| `Edit` `db/migrations/003_new.sql` (exists, not committed) | 0 |
+| `Write` `db/migrations/004_brand_new.sql` (new file) | 0 |
 | `Edit` `lib/tasks.ts` (not a migration) | 0 |
+| `Edit` an existing migration outside a git repo (fail closed) | 2 |
 
 ## Known gap
 

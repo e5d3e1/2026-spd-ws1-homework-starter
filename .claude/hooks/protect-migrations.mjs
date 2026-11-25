@@ -1,6 +1,8 @@
 // owner: @e5d3e1 · why: applied migrations are immutable; editing one silently diverges existing DBs from fresh ones · review-by: 2027-02-24
-// PreToolUse hook: blocks Edit/Write/MultiEdit on an EXISTING db/migrations/*.sql file (exit 2).
-// Creating a new migration file is allowed.
+// PreToolUse hook: blocks Edit/Write/MultiEdit on an APPLIED db/migrations/*.sql file (exit 2).
+// "Applied" = committed in HEAD. A new migration (not yet committed) can be created and fixed.
+// Paths are canonicalized (realpath), so a symlink alias cannot bypass the check.
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -19,11 +21,38 @@ try {
 const filePath = payload?.tool_input?.file_path;
 if (!WATCHED_TOOLS.has(payload?.tool_name) || typeof filePath !== "string") process.exit(0);
 
-const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const abs = path.resolve(root, filePath);
+// Resolve symlinks; for a file that does not exist yet, resolve its parent directory.
+function canonical(p) {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    try {
+      return path.join(fs.realpathSync(path.dirname(p)), path.basename(p));
+    } catch {
+      return p;
+    }
+  }
+}
+
+// True if the file is committed in HEAD. If git cannot answer, treat it as applied (fail closed).
+function isCommitted(rel) {
+  try {
+    const out = execFileSync("git", ["ls-tree", "--name-only", "HEAD", "--", rel], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return out.trim() !== "";
+  } catch {
+    return true;
+  }
+}
+
+const root = canonical(process.env.CLAUDE_PROJECT_DIR || process.cwd());
+const abs = canonical(path.resolve(root, filePath));
 const rel = path.relative(root, abs).split(path.sep).join("/");
 
-if (/^db\/migrations\/[^/]+\.sql$/.test(rel) && fs.existsSync(abs)) {
+if (/^db\/migrations\/[^/]+\.sql$/.test(rel) && fs.existsSync(abs) && isCommitted(rel)) {
   const message =
     `BLOCKED: ${rel} is an applied migration and must not be edited. ` +
     `Add a new migration instead, e.g. db/migrations/NNN_<name>.sql (see AGENTS.md hard rules).`;
