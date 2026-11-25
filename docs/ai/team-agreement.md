@@ -11,7 +11,7 @@ Levels: **L0** no agent · **L1** agent suggests, human writes · **L2** agent w
 
 | Change type | Level | Evidence that earns this level | Who signs off |
 |---|---|---|---|
-| Tests only (`lib/*.test.ts`) | L3 | New tests fail without the change and pass with it; `npm test` green | Any team member reviews the PR |
+| Tests only (`lib/*.test.ts`) | L3 | Tests for a behaviour change fail without the change and pass with it; regression tests for existing behaviour pass on the base branch and the PR says which behaviour they pin; `npm test` green | Any team member reviews the PR |
 | API route (`app/api/**`) | L3 | Logic stays in `lib/`; a test per status/rule branch; `npm test` and `npm run typecheck` green | Any team member |
 | Business rule (`lib/tasks.ts`) | L2 | Test for both sides of each boundary; rule change is mentioned in `AGENTS.md` if numbers change | Tech lead reads every line |
 | New DB migration (`db/migrations/NNN_*.sql`) | L2 | Done through the `add-migration` skill: runs on a fresh DB (`npm test` applies all migrations to an empty DB), rollback described in the PR | Tech lead |

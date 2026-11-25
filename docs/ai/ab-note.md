@@ -28,7 +28,7 @@ Raw outputs were kept outside the repo (`../hw-runs/*.json`, `*.diff`); numbers 
 `total_cost_usd` and `git diff --stat` (90 bytes = one line changed in `001`; 0 bytes = nothing changed).
 
 **What changed:**
-- Without the harness the agent edited an applied migration in 3 of 3 runs. With it, it did not in 0 of 3.
+- Without the harness the agent edited an applied migration in 3 of 3 runs. With the harness, the agent edited the migration in 0 of 3 runs.
 - With the plain prompt the **text rule** in `AGENTS.md` stopped the agent (B1, B2); the hook never ran in those two runs.
 - When the user explicitly cancelled the text rule (prompt 2), the agent was ready to edit, and the **hook** stopped it (B3).
   Its message: "Правку заблокував хук `.claude/hooks/protect-migrations.mjs`. Файл `001_create_tasks.sql` не змінено … хук працює окремо від нього і про твій виняток не знає."
