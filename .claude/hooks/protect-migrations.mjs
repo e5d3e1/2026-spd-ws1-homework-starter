@@ -50,19 +50,35 @@ function isCommitted(rel) {
 
 const root = canonical(process.env.CLAUDE_PROJECT_DIR || process.cwd());
 const migDir = canonical(path.join(root, "db/migrations"));
-const abs = canonical(path.resolve(root, filePath));
-const name = path.basename(abs);
-const rel = `db/migrations/${name}`; // repo path used for git and messages
+const requested = path.resolve(root, filePath);
+const abs = canonical(requested);
 // Real location relative to root; differs from rel when db/migrations is a symlink inside the repo.
 const realRel = path.relative(root, abs).split(path.sep).join("/");
 const realInRepo = !realRel.startsWith("../") && !path.isAbsolute(realRel);
 
-if (
-  path.dirname(abs) === migDir &&
-  name.endsWith(".sql") &&
-  fs.existsSync(abs) &&
-  (isCommitted(rel) || (realInRepo && isCommitted(realRel)))
-) {
+// A migration can be reached two ways; check both:
+// - the requested entry sits in db/migrations (it may be a symlink to a file elsewhere);
+// - the real file sits in db/migrations (the requested path may be an alias of it).
+const names = [];
+if (canonical(path.dirname(requested)) === migDir) names.push(path.basename(requested));
+if (path.dirname(abs) === migDir) names.push(path.basename(abs));
+
+// lstat: a committed symlink entry counts as existing even if its target is missing.
+const entryExists = (() => {
+  try {
+    fs.lstatSync(requested);
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+const rel = names
+  .filter((n) => n.endsWith(".sql"))
+  .map((n) => `db/migrations/${n}`) // repo path used for git and messages
+  .find((r) => (entryExists || fs.existsSync(abs)) && (isCommitted(r) || (realInRepo && isCommitted(realRel))));
+
+if (rel) {
   const message =
     `BLOCKED: ${rel} is an applied migration and must not be edited. ` +
     `Add a new migration instead, e.g. db/migrations/NNN_<name>.sql (see AGENTS.md hard rules).`;

@@ -59,7 +59,12 @@ All cases, run on a temporary clone with a symlink `mlink -> db/migrations` and 
 | `Edit` an existing migration outside a git repo (fail closed) | 2 |
 | `db/migrations` itself is a symlink (to `../sql` inside the repo, or to a dir outside it): `Edit` `001` | 2 |
 | Same, symlink committed: `Edit` `db/migrations/001` or `sql/001` → 2; uncommitted `009_new.sql` → 0 | 2 / 0 |
+| File alias outside the folder: `alias.sql -> db/migrations/002…` | 2 |
+| Committed `db/migrations/001…` is a symlink to a file outside the repo: `Edit` / `Write` (also with a missing target) | 2 |
+| Sibling folder with a shared prefix: `db/migrations_old/001…` | 0 |
 
 ## Known gap
 
 The hook only sees `Edit`/`Write`/`MultiEdit`. A shell edit such as `sed -i` on a migration is not caught by it.
+If a migration is a symlink to a file outside the repo, an edit addressed directly to that outside file is not caught either.
+Reviewers check that `git diff` shows no modified file under `db/migrations/` (see `docs/ai/team-agreement.md`).
