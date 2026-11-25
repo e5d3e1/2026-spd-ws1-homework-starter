@@ -1,6 +1,6 @@
 ---
 name: add-migration
-description: Change the database schema by adding a new numbered SQL migration (never edit an existing one). Use when asked to add/alter/drop a column, table, index or constraint in db/migrations.
+description: Change the database schema by adding a new numbered SQL migration (never edit an existing one). Use whenever the user asks to add, change or remove a column, table, index or constraint, or to change the DB schema or a field's limits (додати колонку, змінити схему БД, міграція).
 ---
 <!-- owner: @e5d3e1 · why: schema changes were the riskiest repeated task; applied migrations are immutable (see protect-migrations hook), so every change must be a new file · review-by: 2027-02-24 -->
 
