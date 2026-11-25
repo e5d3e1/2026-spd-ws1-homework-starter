@@ -1,4 +1,4 @@
-// owner: @<github-handle> · why: applied migrations are immutable; editing one silently diverges existing DBs from fresh ones · review-by: 2027-02-24
+// owner: @e5d3e1 · why: applied migrations are immutable; editing one silently diverges existing DBs from fresh ones · review-by: 2027-02-24
 // PreToolUse hook: blocks Edit/Write/MultiEdit on an EXISTING db/migrations/*.sql file (exit 2).
 // Creating a new migration file is allowed.
 import fs from "node:fs";
