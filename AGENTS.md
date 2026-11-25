@@ -20,6 +20,7 @@ Small Next.js 16 + TypeScript app (tasks API, SQLite via `node:sqlite`). Node >=
 - Never read or print `.env*` files or secrets.
 - Business rules live in `lib/tasks.ts` only; every rule change needs a test in `lib/tasks.test.ts`.
 - No new dependencies without asking.
+- Next.js 16 differs from your training data: read the guide in `node_modules/next/dist/docs/` before writing Next.js code.
 - Do not create `CLAUDE.md` or `CLAUDE.local.md`; this file is the single source of instructions.
 
 ## Workflow
