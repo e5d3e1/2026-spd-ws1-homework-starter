@@ -19,7 +19,7 @@
 **How to verify:**
 - `npm test` — green
 - `npm run typecheck` — no errors
-- `npm run db:reset` — if migrations changed (then run the app or tests again)
+- `npm run db:reset` — if migrations changed and you run the app locally (deletes `data/tasks.db`; migrations re-apply on the app's first DB access)
 - <task-specific check>
 
 **Touched areas:** <e.g. `db/migrations/`, `lib/tasks.ts`, `app/api/`; note if a hook or `ask` permission prompted>

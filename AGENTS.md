@@ -7,7 +7,7 @@ Small Next.js 16 + TypeScript app (tasks API, SQLite via `node:sqlite`). Node >=
 - `npm test` — vitest (run before saying a task is done)
 - `npm run typecheck` — `tsc --noEmit`
 - `npm run dev` — dev server on :3000
-- `npm run db:reset` — recreate the local SQLite DB from `db/migrations/`
+- `npm run db:reset` — delete the local SQLite DB (`data/tasks.db`); migrations re-apply on the app's first DB access
 
 ## Layout
 - `lib/tasks.ts` — business rules (title 1..120, estimate 1..40 h, `todo → doing → done`, done is final)

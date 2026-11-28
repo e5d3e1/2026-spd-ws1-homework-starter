@@ -18,9 +18,9 @@ Existing files in `db/migrations/` are applied and immutable; a hook blocks edit
 4. If the change affects a business rule (limits, statuses), update `lib/tasks.ts` and add a test in
    `lib/tasks.test.ts` for both sides of the new boundary. Update the numbers quoted in `AGENTS.md` if they changed.
 5. Verify on a fresh database:
-   - `npm run db:reset` — removes the local DB so all migrations run again on next start.
-   - `npm test` — every test opens an empty in-memory DB and applies all migrations in order.
+   - `npm test` — every test opens an empty in-memory DB and applies all migrations in order; this is the fresh-DB check.
    - `npm run typecheck`
+   - Only to try the change in the running app: `npm run db:reset` (deletes `data/tasks.db`, asks for approval), then `npm run dev`.
 
 ## Check (done = all true)
 
