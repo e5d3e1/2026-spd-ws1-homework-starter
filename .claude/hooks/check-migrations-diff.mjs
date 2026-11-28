@@ -38,7 +38,7 @@ try {
 }
 console.error(
   `BLOCKED: applied migrations were changed by a shell command (${files}). Applied migrations are immutable. ` +
-    `Revert now with: git checkout HEAD -- ${changed.map(([, f]) => shellQuote(f)).join(" ")} ` +
-    `and put the schema change in a new db/migrations/NNN_<name>.sql (see the add-migration skill).`,
+    `Revert now by running exactly this as a separate command, with nothing chained (&&, ;, |): ` +
+    `git checkout HEAD -- ${changed.map(([, f]) => shellQuote(f)).join(" ")} — then put the schema change in a new db/migrations/NNN_<name>.sql (see the add-migration skill).`,
 );
 process.exit(2);
