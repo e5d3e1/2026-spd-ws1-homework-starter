@@ -1,5 +1,6 @@
 // owner: @e5d3e1 · why: applied migrations are immutable; editing one silently diverges existing DBs from fresh ones · review-by: 2027-02-24
-// PreToolUse hook: blocks Edit/Write/MultiEdit on an APPLIED db/migrations/*.sql file (exit 2).
+// PreToolUse hook: blocks Edit/Write/MultiEdit on an APPLIED db/migrations/*.sql file (exit 2),
+// and Bash commands that look like writes to db/migrations/.
 // "Applied" = committed in HEAD. A new migration (not yet committed) can be created and fixed.
 // Paths are canonicalized (realpath), so a symlink alias cannot bypass the check.
 import { execFileSync } from "node:child_process";
@@ -16,6 +17,50 @@ try {
   payload = JSON.parse(raw);
 } catch {
   process.exit(0); // not our payload; never block on parse errors
+}
+
+// Log (best-effort), explain on stderr, exit 2 = block the tool call.
+function block(what, message) {
+  try {
+    const logRoot = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+    fs.appendFileSync(path.join(logRoot, ".claude/hooks/block.log"), `${new Date().toISOString()} ${payload.tool_name} ${what}\n`);
+  } catch {
+    // logging is best-effort
+  }
+  console.error(message);
+  process.exit(2);
+}
+
+// Bash: heuristic on the command text. Blocks a command that mentions db/migrations AND looks like a write
+// (redirect, in-place edit, tee, mv/cp/rm, ...). Reads (ls, cat, grep, git diff) pass.
+// Parsing cannot be complete; the PostToolUse check (git diff against HEAD) catches what this misses.
+if (payload?.tool_name === "Bash") {
+  const cmd = payload?.tool_input?.command;
+  if (typeof cmd !== "string" || !/migrations/i.test(cmd)) process.exit(0);
+  // Quoted text is usually data (grep '->'), not shell syntax, so drop it -- unless the shell will run it:
+  // a nested shell outside quotes (bash -c "...", eval) or a command substitution ($(...), `...`).
+  const unescaped = cmd.replace(/\\['"]/g, "_"); // \' and \" are literal characters, not quotes
+  const unquoted = unescaped.replace(/'[^']*'|"(?:[^"\\]|\\.)*"/g, "''");
+  const runsQuoted = /\b(sh|bash|zsh|eval)\b/.test(unquoted) || /\$\(|`/.test(cmd);
+  const stripped = (runsQuoted ? cmd : unquoted)
+    .replace(/\d*>>?\s*\/dev\/null/g, "") // harmless redirects
+    .replace(/\d*>&\d/g, "");
+  const WRITE = [
+    />/, // > and >> redirects
+    /\b(sed|perl|ruby)\b[^|;&]*\s(-[a-zA-Z]*i|--in-place)/, // in-place edit: sed -i, perl -pi, sed --in-place
+    /\bfind\b[^|;&]*\s-(delete|exec|execdir|ok)\b/,
+    /\b(tee|sponge|mv|cp|rm|truncate|dd|ln|install|touch|chmod)\b/i, // /i: a case-insensitive FS may resolve `Rm` to rm
+    /\bgit\b[^|;&]*\s(apply|mv|rm|restore|checkout|stash|clean|reset)\b/, // also after git -C/-c options
+  ];
+  if (WRITE.some((re) => re.test(stripped))) {
+    block(
+      JSON.stringify(cmd.slice(0, 200)),
+      "BLOCKED: this shell command looks like it writes to db/migrations/. Applied migrations are immutable " +
+        "and shell writes there are not allowed. To add a migration, create db/migrations/NNN_<name>.sql with the " +
+        "Write tool (see the add-migration skill); to inspect files, use Read or a read-only command.",
+    );
+  }
+  process.exit(0);
 }
 
 const filePath = payload?.tool_input?.file_path;
@@ -79,19 +124,11 @@ const rel = names
   .find((r) => (entryExists || fs.existsSync(abs)) && (isCommitted(r) || (realInRepo && isCommitted(realRel))));
 
 if (rel) {
-  const message =
+  block(
+    rel,
     `BLOCKED: ${rel} is an applied migration and must not be edited. ` +
-    `Add a new migration instead, e.g. db/migrations/NNN_<name>.sql (see AGENTS.md hard rules).`;
-  try {
-    fs.appendFileSync(
-      path.join(root, ".claude/hooks/block.log"),
-      `${new Date().toISOString()} ${payload.tool_name} ${rel}\n`,
-    );
-  } catch {
-    // logging is best-effort
-  }
-  console.error(message);
-  process.exit(2);
+      `Add a new migration instead, e.g. db/migrations/NNN_<name>.sql (see AGENTS.md hard rules).`,
+  );
 }
 
 process.exit(0);
