@@ -25,6 +25,11 @@ Shell edits of migrations: a `PreToolUse` check on `Bash` blocks write-like comm
 check (`git diff` against `HEAD`) catches the rest after the command ran. Neither sees a change the agent committed, so
 reviewers still check that `git diff main -- db/migrations` shows added files only (limits: `docs/ai/hook-evidence.md`).
 
+Permissions (`.claude/settings.json`) match the command text: `.env` is denied to the file tools, to commands that name it
+(`cat .env`) and to any Bash command containing `.env`; recursive `rm` and force push are denied in their common spellings
+(also `git -C . push --force`). Not covered: a command that reads `.env` without naming it (`grep -r KEY .`) or a script
+that builds the name itself; OS-level enforcement would need the sandbox, which we do not enable (it breaks the npm cache).
+
 ## 2. Who owns agent output
 
 The person who opens the PR owns it as if they wrote it. "The agent did it" is not a reason in review.
