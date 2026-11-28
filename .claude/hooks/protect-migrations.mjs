@@ -83,12 +83,14 @@ const filePath = payload?.tool_input?.file_path;
 if (!WATCHED_TOOLS.has(payload?.tool_name) || typeof filePath !== "string") process.exit(0);
 
 // Resolve symlinks; for a file that does not exist yet, resolve its parent directory.
+// .native returns the on-disk letter case, so on a case-insensitive FS (macOS default)
+// `DB/Migrations/001_CREATE_TASKS.SQL` resolves to `db/migrations/001_create_tasks.sql`.
 function canonical(p) {
   try {
-    return fs.realpathSync(p);
+    return fs.realpathSync.native(p);
   } catch {
     try {
-      return path.join(fs.realpathSync(path.dirname(p)), path.basename(p));
+      return path.join(fs.realpathSync.native(path.dirname(p)), path.basename(p));
     } catch {
       return p;
     }

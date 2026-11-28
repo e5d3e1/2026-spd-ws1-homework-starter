@@ -111,4 +111,6 @@ non-ASCII and `'`; the printed revert command was run and the check returned 0 a
   are blocked; new migrations are created with the `Write` tool.
 - If a migration is a symlink to a file outside the repo, an edit addressed directly to that outside file is not caught
   (git sees the symlink unchanged).
-- Edit paths in a different letter case (`DB/Migrations/…`) on a case-insensitive file system: being fixed (review item 2).
+- Letter case: paths are resolved with `fs.realpathSync.native`, so on a case-insensitive file system (macOS default)
+  `DB/Migrations/001_CREATE_TASKS.SQL` is the committed `001` and is blocked (41/41 subagent cases: other case in folder,
+  name and extension, absolute, `..`, symlink alias; new migrations in any case allowed). Not tested on a case-sensitive FS.
