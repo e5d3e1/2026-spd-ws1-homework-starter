@@ -21,8 +21,9 @@ Levels: **L0** no agent · **L1** agent suggests, human writes · **L2** agent w
 Rule of thumb: a change type goes one level up only when its check is cheap, independent of the agent, and runs every time.
 No type is at L4 yet: we have no CI that gates merges, so nothing here earns "agent merges".
 
-Known gap: the hook sees only `Edit`/`Write`/`MultiEdit`. A shell edit (`sed -i`) of a migration is not blocked; reviewers check
-that `git diff` shows no modified file under `db/migrations/` (new files only).
+Shell edits of migrations: a `PreToolUse` check on `Bash` blocks write-like commands on `db/migrations`, and a `PostToolUse`
+check (`git diff` against `HEAD`) catches the rest after the command ran. Neither sees a change the agent committed, so
+reviewers still check that `git diff main -- db/migrations` shows added files only (limits: `docs/ai/hook-evidence.md`).
 
 ## 2. Who owns agent output
 

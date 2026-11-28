@@ -39,7 +39,8 @@ Raw outputs were kept outside the repo (`../hw-runs/*.json`, `*.diff`); numbers 
 **What didn't change / caveats:**
 - Cost and turns: no clear difference (A: 3, 3, 3 turns, $0.011–0.060; B: 3, 2, 3 turns, $0.020–0.064). Cost varies more between runs than between sides, so we draw no conclusion from it.
 - Sample is small: 3 runs per side, one task. It shows the direction, not a rate.
-- Hook coverage is narrow: it sees `Edit`/`Write`/`MultiEdit`, not shell edits (`sed -i`). In B3 the agent chose not to use the shell, which is not a guarantee.
+- At the time of these runs the hook saw only `Edit`/`Write`/`MultiEdit`, not shell edits (`sed -i`); in B3 the agent chose not
+  to use the shell, which was not a guarantee. Shell coverage was added later (`docs/ai/hook-evidence.md`, sections 4-5); these runs were not repeated with it.
 - A first attempt at the baseline ran in a `git worktree` of this repo and was **contaminated**: the agent mentioned the skill and the hook that do not exist at `3d0ac87`
   (our guess: Claude Code picked up project config from the main repo through the shared `.git`; not verified). Those runs were discarded and A was repeated in a standalone copy.
 - `block.log` has one extra line (`14:00:13Z`) that we cannot attribute to any run in this note; two lines appear around B3 where we ran the hook once. We did not investigate further.
