@@ -31,12 +31,28 @@ function block(what, message) {
   process.exit(2);
 }
 
+// The one shell write we allow: `git checkout HEAD -- <paths in db/migrations>` as the whole command.
+// It restores committed content (the revert that check-migrations-diff.mjs asks for), so it cannot change a migration.
+// No shell metacharacters, no newlines (a second command), no other revision than HEAD,
+// no `..`, and no name starting with `.` (bash expands `db/migrations/.*` to `db/migrations/..`).
+function isRevertToHead(cmd) {
+  const m = /^[ \t]*git[ \t]+checkout[ \t]+HEAD[ \t]+--((?:[ \t]+(?:'[^'\n]*'|"[^"$`\\\n]*"|[^\s'"]+))+)\s*$/.exec(cmd);
+  if (!m) return false;
+  const args = m[1].match(/'[^']*'|"[^"]*"|[^\s'"]+/g);
+  return args.every((a) => {
+    const p = a.replace(/^(['"])(.*)\1$/, "$2");
+    if (a === p && /[;&|<>$`\\(){}]/.test(p)) return false; // unquoted shell syntax
+    return /^(\.\/)?db\/migrations\/[^/.][^/]*$/.test(p) && !p.includes("..");
+  });
+}
+
 // Bash: heuristic on the command text. Blocks a command that mentions db/migrations AND looks like a write
 // (redirect, in-place edit, tee, mv/cp/rm, ...). Reads (ls, cat, grep, git diff) pass.
 // Parsing cannot be complete; the PostToolUse check (git diff against HEAD) catches what this misses.
 if (payload?.tool_name === "Bash") {
   const cmd = payload?.tool_input?.command;
   if (typeof cmd !== "string" || !/migrations/i.test(cmd)) process.exit(0);
+  if (isRevertToHead(cmd)) process.exit(0);
   // Quoted text is usually data (grep '->'), not shell syntax, so drop it -- unless the shell will run it:
   // a nested shell outside quotes (bash -c "...", eval) or a command substitution ($(...), `...`).
   const unescaped = cmd.replace(/\\['"]/g, "_"); // \' and \" are literal characters, not quotes
