@@ -105,12 +105,14 @@ non-ASCII and `'`; the printed revert command was run and the check returned 0 a
 - The Bash heuristic is a pattern match, not a shell parser: a write that does not mention `migrations` (a script, a glob
   like `db/migr*`) or uses a tool it does not know passes `PreToolUse`. Layer 5 catches those.
 - `PostToolUse` detects after the command ran; it cannot undo. The file stays changed until the agent or a human runs the revert.
-- It compares with `HEAD`, so a change the agent has already committed is not seen (reviewers check that
-  `git diff main -- db/migrations` shows only added files).
+- It compares with `HEAD`, so a change the agent has already committed is not seen. Reviewers check the PR diff
+  (merge base to PR head): `git diff --name-status main...HEAD -- db/migrations` shows only `A` lines.
 - False positives: `cat > db/migrations/003_x.sql <<EOF` and read commands with unquoted write words (`grep -v install …`)
   are blocked; new migrations are created with the `Write` tool.
-- If a migration is a symlink to a file outside the repo, an edit addressed directly to that outside file is not caught
-  (git sees the symlink unchanged).
+- If a committed migration is a symlink to another file, an `Edit`/`Write` addressed directly to that target is blocked
+  (the hook compares the target with the real path of every committed entry). A **shell** write to that target is not
+  caught: the command need not mention `migrations`, and `git diff` sees the symlink unchanged. Restriction instead:
+  migrations are plain files; reviewers reject a PR that adds a symlink under `db/migrations/` (the PR diff shows mode `120000`).
 - Letter case: paths are resolved with `fs.realpathSync.native`, so on a case-insensitive file system (macOS default)
   `DB/Migrations/001_CREATE_TASKS.SQL` is the committed `001` and is blocked (41/41 subagent cases: other case in folder,
   name and extension, absolute, `..`, symlink alias; new migrations in any case allowed). Not tested on a case-sensitive FS.

@@ -149,4 +149,37 @@ if (rel) {
   );
 }
 
+// A committed migration entry may be a symlink to a file anywhere (lib/db.ts follows it). Block an edit
+// addressed directly to that target: compare the real target with the real path of every committed entry.
+// Only files that exist can be a target, so a new file never reaches git here.
+if (fs.existsSync(abs)) {
+  let committed = [];
+  try {
+    committed = execFileSync("git", ["ls-tree", "-z", "--name-only", "HEAD", "--", "db/migrations/"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .split("\0")
+      .filter((r) => r.endsWith(".sql"));
+  } catch {
+    // no git / no HEAD: the checks above already decided
+  }
+  const target = committed.find((r) => {
+    const entry = path.join(root, r);
+    try {
+      return fs.lstatSync(entry).isSymbolicLink() && canonical(entry) === abs;
+    } catch {
+      return false;
+    }
+  });
+  if (target) {
+    block(
+      `${realRel} (target of ${target})`,
+      `BLOCKED: ${realRel} is the target of the applied migration ${target} (a symlink) and must not be edited. ` +
+        `Add a new migration instead, e.g. db/migrations/NNN_<name>.sql (see AGENTS.md hard rules).`,
+    );
+  }
+}
+
 process.exit(0);

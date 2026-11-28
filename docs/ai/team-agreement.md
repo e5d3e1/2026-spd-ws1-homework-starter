@@ -23,7 +23,8 @@ No type is at L4 yet: we have no CI that gates merges, so nothing here earns "ag
 
 Shell edits of migrations: a `PreToolUse` check on `Bash` blocks write-like commands on `db/migrations`, and a `PostToolUse`
 check (`git diff` against `HEAD`) catches the rest after the command ran. Neither sees a change the agent committed, so
-reviewers still check that `git diff main -- db/migrations` shows added files only (limits: `docs/ai/hook-evidence.md`).
+reviewers still check the PR diff (merge base to PR head): `git diff --name-status main...HEAD -- db/migrations`
+shows only `A` lines and no symlinks (limits: `docs/ai/hook-evidence.md`).
 
 Permissions (`.claude/settings.json`) match the command text: `.env` is denied to the file tools, to commands that name it
 (`cat .env`) and to any Bash command containing `.env`; recursive `rm` and force push are denied in their common spellings
